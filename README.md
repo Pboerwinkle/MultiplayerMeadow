@@ -1,11 +1,11 @@
 # ServerClientModel
-model for client server setup
-it's probably not very good, i'm just using it as a place
-to keep it so I can test it over long distances.
+<title>model for client server setup<\title>
+<p>it's probably not very good, i'm just using it as a place
+to keep it so I can test it over long distances.<\p>
 
-run the server with server.py
-run the client with client.py
+<p>run the server with server.py<\p>
+<p>run the client with client.py
   the ip address is the ip address of the machine where
   you ran the server
   
-  the port is 15000
+  the port is 15000<\p>
