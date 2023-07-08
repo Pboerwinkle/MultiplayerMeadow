@@ -39,9 +39,13 @@ framerate = 60
 
 def commWithServer(ipAddress, port):
 	global closedCommunication
+	global frames
+	global controls
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 		s.connect((ipAddress, port))
 		while True:
+			clock.tick(framerate)
+			controlLength = len(controls)
 			if(controls):
 				msg = json.dumps(controls)
 				s.sendall(msg.encode("utf-8"))
@@ -49,12 +53,22 @@ def commWithServer(ipAddress, port):
 				s.sendall("no controls".encode("utf-8"))
 			for control in controls:
 				if(control["quit"]):
+					response = ""
+					print("waiting for response...")
+					while response != "ok":
+						response = s.recv(1024).decode("utf-8")
+					print("...got response")
 					closedCommunication = True
 					return
-			controls.clear()
+			controls = controls[controlLength-1:]
 			rawData = s.recv(1024)
-			data = json.loads(rawData.decode("utf-8"))
-			frames.append(data)
+			decodedDatas = rawData.decode("utf-8")
+			if(decodedDatas != "no frames"):
+				datas = json.loads(decodedDatas)
+				frames += datas
+#			else:
+#				print("no frames")
+
 serverConnection = threading.Thread(target=commWithServer, args=(ipAddress, port,))
 serverConnection.start()
 
@@ -79,7 +93,7 @@ while True:
 				for bind in keyBinds[key]:
 					if(event.key == bind):
 						keysPressed[key] = False
-	if(len(controls) <= 3):
+	if(len(controls) <= 5):
 		controls.append(keysPressed.copy())
 	for frame in frames:
 		screen.fill((0, 0, 0))
@@ -87,3 +101,9 @@ while True:
 			screen.blit(imgs[img[0]], (img[1][0]*zoomFactor+round(screenSize[0]/2), img[1][1]*zoomFactor+round(screenSize[0]/2)))
 		pygame.display.flip()
 		frames.pop(0)
+	print(len(frames))
+#	if(frames):
+#		for img in frames[-1]:
+#			screen.blit(imgs[img[0]], (img[1][0]*zoomFactor+round(screenSize[0]/2), img[1][1]*zoomFactor+round(screenSize[0]/2)))
+#			pygame.display.flip()
+#	frames.clear()

@@ -38,17 +38,20 @@ class bee:
 					for data in datas:
 						if not rawData or data["quit"]:
 							print(self.address[0]+" disconnected")
+							self.connection.sendall("ok".encode("utf-8"))
 							self.disconnected = True
 							break
 						self.inputs.append(data)
-				else:
-					print("no input")
+#				else:
+#					print("no input")
 				if(self.disconnected):
 					break
-				while not self.outputs:
-					pass
-				self.connection.sendall(json.dumps(self.outputs[0]).encode("utf-8"))
-				self.outputs.pop(0)
+				if(self.outputs):
+					msg = json.dumps(self.outputs)
+					self.connection.sendall(msg.encode("utf-8"))
+				else:
+					self.connection.sendall("no frames".encode("utf-8"))
+				self.outputs.clear()
 
 	def doInputs(self):
 		currentInputs = self.inputs.copy()
