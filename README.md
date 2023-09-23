@@ -1,5 +1,5 @@
-# ServerClientModel
-Model for client server setup
+# MultiplayerMeadow
+Model for client and server
 
 it's probably not very good, i'm just using it as a place
 to keep it so I can test it over long distances.
