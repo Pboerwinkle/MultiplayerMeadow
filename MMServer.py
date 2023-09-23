@@ -91,4 +91,3 @@ while True:
 	for client in clients:
 		screen.blit(beeImg, client.pos)
 	pygame.display.flip()
-	pygame.display.flip()
