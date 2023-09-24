@@ -1,3 +1,4 @@
+import sys
 import socket
 import json
 import threading
@@ -5,6 +6,15 @@ import time
 import random
 import pygame
 pygame.init()
+
+if len(sys.argv) == 1:
+	PORT = 15000
+elif len(sys.argv) > 2:
+	print("only one argument is supported:\npython3 MMServer.py PORT\n(default is 15000)")
+	python.quit()
+	quit()
+else:
+	PORT = int(sys.argv[1])
 
 screenWidth = 1200
 screenHeight = 600
@@ -43,26 +53,31 @@ class bee:
 			clock.tick(15)
 			if(self.disconnected):
 				break
-			msg = json.dumps(getMapState(self.address))
+			msg = json.dumps(getMapState(self.address))+";"
 			self.connection.sendall(msg.encode("utf-8"))
 	def fromClient(self):
+		decodedDatas = ""
 		while True:
 			clock.tick(15)
 			rawData = self.connection.recv(10240)
-			decodedDatas = rawData.decode("utf-8")
+			decodedDatas += rawData.decode("utf-8")
 			if decodedDatas:
-				datas = json.loads(decodedDatas)
-				if datas["quit"]:
-					print(self.address[0]+" disconnected")
-					self.connection.sendall("ok".encode("utf-8"))
-					self.disconnected = True
-					break
-				self.pos = datas["pos"]
+				while ";" in decodedDatas:
+					index = decodedDatas.index(";")
+					datas = json.loads(decodedDatas[:index])
+					decodedDatas = decodedDatas[index+1:]
+					if datas["quit"]:
+						print(self.address[0]+" disconnected")
+						self.connection.sendall("ok".encode("utf-8"))
+						self.disconnected = True
+						break
+					self.pos = datas["pos"]
 
 def createClientHandlers():
+	global PORT
 	global clients
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-		s.bind(("", 15000))
+		s.bind(("", PORT))
 		s.listen()
 		while True:
 			connection, address = s.accept()
