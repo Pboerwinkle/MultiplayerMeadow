@@ -7,8 +7,3 @@ to keep it so I can test it over long distances.
 run the server with [python3 MMServer.py PORT](default is 15000)
 
 run the client with [client.py MMClient.py IPADDRESS PORT](defaults are 127.0.0.1 and 15000 respectively)
-
-1. the ip address is the ip address of the machine where
-  you ran the server
-  
-2. the port is 15000
