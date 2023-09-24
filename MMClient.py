@@ -1,3 +1,4 @@
+import sys
 import random
 import socket
 import threading
@@ -6,12 +7,24 @@ import time
 import pygame
 pygame.init()
 
-ipAddress = input("ip address: ")
-port = input("port(default: 15000): ")
-if port == "":
+if len(sys.argv) == 1:
+	ipAddress = "127.0.0.1"
 	port = 15000
+elif len(sys.argv) > 3:
+	print("only two arguments are supported:\npython3 MMServer.py IPADDRESS(default: 127.0.0.1) PORT(default: 15000)")
+	python.quit()
+	quit()
+elif len(sys.argv) == 2:
+	if "." in sys.argv[1]:
+		ipAddress = sys.argv[1]
+		port = 15000
+	else:
+		ipAddress = "127.0.0.1"
+		port = int(sys.argv[1])
 else:
-	port = int(port)
+	ipAddress = sys.argv[1]
+	port = int(sys.argv[2])
+
 closedCommunication = False
 
 keyBinds = {"left": [97, 1073741904],
@@ -27,7 +40,7 @@ meadowImg = pygame.image.load("meadow.png")
 beeImg = pygame.image.load("bee.png")
 zoomFactor = 2
 
-imgs = {"meadowImg": pygame.transform.scale2x(meadowImg), "beeImg": pygame.transform.scale2x(beeImg)}
+imgs = {"meadowImg": pygame.transform.scale(meadowImg, (2400, 1200)), "beeImg": pygame.transform.scale(beeImg, (38, 40))}
 
 screenWidth = 600
 screenHeight = 600
@@ -37,7 +50,7 @@ while not pygame.display.get_active():
 	time.sleep(0.1)
 pygame.display.set_caption("client view","client view")
 clock = pygame.time.Clock()
-framerate = 30
+framerate = 60
 
 player = {"pos": [random.randint(500, 550), random.randint(270, 320)], "quit": False}
 frames = []
@@ -49,7 +62,7 @@ def commWServer(ipAddress, port):
 		nonlocal s
 		while True:
 			clock.tick(15)
-			msg = json.dumps(player)
+			msg = json.dumps(player)+";"
 			s.sendall(msg.encode("utf-8"))
 			if(player["quit"]):
 				toServerClosed = True
@@ -60,6 +73,7 @@ def commWServer(ipAddress, port):
 		global player
 		nonlocal fromServerClosed
 		nonlocal s
+		decodedDatas = ""
 		while True:
 			clock.tick(15)
 			if(player["quit"]):
@@ -72,10 +86,13 @@ def commWServer(ipAddress, port):
 				fromServerClosed = True
 				return
 			rawData = s.recv(1024)
-			decodedDatas = rawData.decode("utf-8")
+			decodedDatas += rawData.decode("utf-8")
 			if decodedDatas:
-				datas = json.loads(decodedDatas)
-				frames.append(datas)
+				while ";" in decodedDatas:
+					index = decodedDatas.index(";")
+					datas = json.loads(decodedDatas[:index])
+					decodedDatas = decodedDatas[index+1:]
+					frames.append(datas)
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
 		s.connect((ipAddress, port))
 		toServerClosed = False
@@ -113,13 +130,13 @@ while True:
 						keysPressed[key] = False
 
 	if keysPressed["left"]:
-		player["pos"][0] -= 3
+		player["pos"][0] -= 2
 	if keysPressed["right"]:
-		player["pos"][0] += 3
+		player["pos"][0] += 2
 	if keysPressed["up"]:
-		player["pos"][1] -= 3
+		player["pos"][1] -= 2
 	if keysPressed["down"]:
-		player["pos"][1] += 3
+		player["pos"][1] += 2
 
 	for frame in frames:
 		screen.fill((0, 0, 0))
