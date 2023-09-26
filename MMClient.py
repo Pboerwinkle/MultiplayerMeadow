@@ -4,6 +4,7 @@ import socket
 import threading
 import json
 import time
+import copy
 import pygame
 pygame.init()
 
@@ -54,43 +55,42 @@ framerate = 60
 
 player = {"pos": [random.randint(500, 550), random.randint(270, 320)], "quit": False}
 frames = []
+prevFrame = []
 
 def commWServer(ipAddress, port):
+	global closedCommunication
 	def toServer():
 		global player
 		nonlocal toServerClosed
 		nonlocal s
+		quitted = False
 		while True:
-			clock.tick(15)
+			clock.tick(30)
+			if player["quit"]:
+				quitted = True
 			msg = json.dumps(player)+";"
 			s.sendall(msg.encode("utf-8"))
-			if(player["quit"]):
+			if quitted:
 				toServerClosed = True
 				return
 	def fromServer():
-		global closedCommunication
 		global frames
 		global player
 		nonlocal fromServerClosed
 		nonlocal s
 		decodedDatas = ""
 		while True:
-			clock.tick(15)
-			if(player["quit"]):
-				response = ""
-				print("waiting for response...")
-				while response != "ok":
-					response = s.recv(1024).decode("utf-8")
-				print("...got response")
-				closedCommunication = True
-				fromServerClosed = True
-				return
+			clock.tick(30)
 			rawData = s.recv(1024)
 			decodedDatas += rawData.decode("utf-8")
 			if decodedDatas:
 				while ";" in decodedDatas:
 					index = decodedDatas.index(";")
-					datas = json.loads(decodedDatas[:index])
+					shortData = decodedDatas[:index]
+					if shortData == "quit":
+						fromServerClosed = True
+						return
+					datas = json.loads(shortData)
 					decodedDatas = decodedDatas[index+1:]
 					frames.append(datas)
 	with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -103,11 +103,16 @@ def commWServer(ipAddress, port):
 		fromServerThrd = threading.Thread(target=fromServer, args=())
 		fromServerThrd.start()
 		while not toServerClosed and not fromServerClosed:
-			time.sleep(15)
+			time.sleep(2)
+		closedCommunication = True
 
 commWServerThrd = threading.Thread(target=commWServer, args=(ipAddress, port,))
 commWServerThrd.start()
 
+def blitImg(img, pos):
+	x = (pos[0]-player["pos"][0]) * zoomFactor + round(screenSize[0]/2)
+	y = (pos[1]-player["pos"][1]) * zoomFactor + round(screenSize[1]/2)
+	screen.blit(img, (x, y))
 while True:
 	clock.tick(framerate)
 	if(closedCommunication):
@@ -118,6 +123,8 @@ while True:
 	for event in events:
 		if(event.type == pygame.QUIT):
 			player["quit"] = True
+			screen.fill((0, 0, 0))
+			pygame.display.flip()
 		if(event.type == pygame.KEYDOWN):
 			for key in keyBinds:
 				for bind in keyBinds[key]:
@@ -138,10 +145,25 @@ while True:
 	if keysPressed["down"]:
 		player["pos"][1] += 2
 
-	for frame in frames:
-		screen.fill((0, 0, 0))
-		for img in frame:
-			screen.blit(imgs[img[0]], ((img[1][0]-player["pos"][0])*zoomFactor+round(screenSize[0]/2), (img[1][1]-player["pos"][1])*zoomFactor+round(screenSize[0]/2)))
-		screen.blit(imgs["beeImg"], (round(screenWidth/2), round(screenHeight/2)))
-		pygame.display.flip()
-	frames.clear()
+	if not player["quit"]:
+		if frames:
+			for frame in frames:
+				screen.fill((0, 0, 0))
+				blitImg(imgs["meadowImg"], (0, 0))
+
+				for img in frame:
+					blitImg(imgs[img[0]], (img[1][0], img[1][1]))
+
+				blitImg(imgs["beeImg"], (player["pos"][0], player["pos"][1]))
+				pygame.display.flip()
+			prevFrame = copy.deepcopy(frames[-1])
+			frames.clear()
+		else:
+			screen.fill((0, 0, 0))
+			blitImg(imgs["meadowImg"], (0, 0))
+
+			for img in prevFrame:
+				blitImg(imgs[img[0]], (img[1][0], img[1][1]))
+
+			blitImg(imgs["beeImg"], (player["pos"][0], player["pos"][1]))
+			pygame.display.flip()
