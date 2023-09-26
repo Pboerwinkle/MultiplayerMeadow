@@ -28,7 +28,6 @@ framerate = 60
 
 def getMapState(address):
 	mapState = []
-	mapState.append(["meadowImg", [0, 0]])
 	for client in clients:
 		if client.address != address:
 			mapState.append(["beeImg", [client.pos[0], client.pos[1]]])
@@ -50,7 +49,7 @@ class bee:
 
 	def toClient(self):
 		while True:
-			clock.tick(15)
+			clock.tick(30)
 			if(self.disconnected):
 				break
 			msg = json.dumps(getMapState(self.address))+";"
@@ -58,7 +57,7 @@ class bee:
 	def fromClient(self):
 		decodedDatas = ""
 		while True:
-			clock.tick(15)
+			clock.tick(30)
 			rawData = self.connection.recv(10240)
 			decodedDatas += rawData.decode("utf-8")
 			if decodedDatas:
@@ -68,7 +67,7 @@ class bee:
 					decodedDatas = decodedDatas[index+1:]
 					if datas["quit"]:
 						print(self.address[0]+" disconnected")
-						self.connection.sendall("ok".encode("utf-8"))
+						self.connection.sendall("quit;".encode("utf-8"))
 						self.disconnected = True
 						break
 					self.pos = datas["pos"]
